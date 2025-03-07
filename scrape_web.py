@@ -89,13 +89,38 @@ def getGamesToday():
     games = [] #table to store game info
 
     gameRows = todayData.find_all("tr", attrs={"data-idx": True})
+    #iterate through each game and schedule data
     for game in gameRows:
         gameContent = game.find_all("td")
-        print(gameContent[3].get_text())
-        exit()
+
+        #filter useful information
+        awayTeam = gameContent[0].get_text()
+        homeTeam = gameContent[1].get_text()
+        homeTeam = homeTeam.replace('@', '').strip()
+
+        gamblingStats = gameContent[5].get_text()
+        #if game stats are changing they won't show up on espn
+        if gamblingStats and "O/U:" in gamblingStats:
+            gameline, totalPoints = gamblingStats.split("O/U:")
+            gameline = gameline.replace("Line:", "").strip()
+            totalPoints = totalPoints.strip()
+        else:
+            gameline = ""
+            totalPoints = ""
+    
+        #add information to dictionary and append to game array
+        gameDetails = {
+            "awayTeam": awayTeam,
+            "homeTeam": homeTeam,
+            "gameline": gameline,
+            "overUnder": totalPoints
+        }
+        games.append(gameDetails)
+
+    return games
     
 
-getGamesToday()   
-
+print(getGamesToday())   
+print(getTeams())
     
         
