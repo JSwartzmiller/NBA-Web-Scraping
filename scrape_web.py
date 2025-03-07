@@ -45,10 +45,57 @@ def getTeams():
     #return created dictionary
     return team_dictionary      
 
-            
-        
-def main():
-    x = getTeams()
 
-if __name__ == "__main__":
-    main()
+
+def getGamesToday():
+    #URL that holds todays NBA schedule
+    url = "https://www.espn.com/nba/schedule"
+    #copied from geeks for geeks
+    headers = {
+        "User-Agent": (
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/122.0.0.0 Safari/537.36"
+        )
+    }
+
+    #check for valid response
+    response = requests.get(url, headers=headers)
+    if response.status_code != 200:
+        print(f"Failed to retrieve schedule. Status Code: {response.status_code}")
+        exit()
+    
+    #use Beautiful soup to format html request
+    data = BeautifulSoup(response.text, "html5lib")
+    
+    #scrape page for table of games
+    allGames = data.find("div", class_="Table__Scroller")
+    if not allGames:
+        print("Could not find the table container.")
+        exit()
+
+    #within the huge table find todays table
+    todaysGames = allGames.find("table", class_="Table")
+    if not todaysGames:
+        print("Could not locate todays games.")
+        exit()
+
+    #find the tbody that contains data within table
+    todayData = todaysGames.find("tbody")
+    if not todayData:
+        print("Error locating todays game data")
+        exit()
+
+    games = [] #table to store game info
+
+    gameRows = todayData.find_all("tr", attrs={"data-idx": True})
+    for game in gameRows:
+        gameContent = game.find_all("td")
+        print(gameContent[3].get_text())
+        exit()
+    
+
+getGamesToday()   
+
+    
+        
