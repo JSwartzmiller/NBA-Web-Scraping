@@ -1,12 +1,41 @@
 import requests
 from bs4 import BeautifulSoup
+import pandas as pd
+import re
 
-def scrapeTeamSchedule(team):
-    print("Hi")
-
-
-def userSelectTeam():
-    print("Hi")
+#map for team names to abbreviations
+TeamAbrMap = {
+    "Atlanta": "ATL",
+    "Boston": "BOS",
+    "Brooklyn": "BRK",
+    "Charlotte": "CHO",
+    "Chicago": "CHI",
+    "Cleveland": "CLE",
+    "Dallas": "DAL",
+    "Denver": "DEN",
+    "Detroit": "DET",
+    "Golden State": "GSW",
+    "Houston": "HOU",
+    "Indiana": "IND",
+    "LA": "LAC",
+    "Los Angeles": "LAL",
+    "Memphis": "MEM",
+    "Miami": "MIA",
+    "Milwaukee": "MIL",
+    "Minnesota": "MIN",
+    "New Orleans": "NOP",
+    "New York": "NYK",
+    "Oklahoma City": "OKC",
+    "Orlando": "ORL",
+    "Philadelphia": "PHI",
+    "Phoenix": "PHO",
+    "Portland": "POR",
+    "Sacramento": "SAC",
+    "San Antonio": "SAS",
+    "Toronto": "TOR",
+    "Utah": "UTA",
+    "Washington": "WAS",
+}
 
 #function to scrape for all NBA teams
 def getTeams():
@@ -46,7 +75,7 @@ def getTeams():
     return team_dictionary      
 
 
-
+#function that gets information about today's games
 def getGamesToday():
     #URL that holds todays NBA schedule
     url = "https://www.espn.com/nba/schedule"
@@ -119,8 +148,107 @@ def getGamesToday():
 
     return games
     
+#shows matchups for suer to select
+def displayMatchup(games):
+    print("Today's Matchups:")
 
-print(getGamesToday())   
-print(getTeams())
+    #iterate through all games and ad values for the user to select
+    for i, game in enumerate(games, start=1):
+        print(f"{i}. {game['awayTeam']} at {game['homeTeam']} "
+              f"(Line: {game['gameline']}, O/U: {game['overUnder']})")
+
+#function to allow user to investigate specific game
+def userSelectGame(games):
+    displayMatchup(games)
+    while True:
+        try:
+            userInput = int(input("Enter the number of the matchup you want to see: "))
+            #check for valid input
+            if 1 <= userInput <= len(games):
+                return games[userInput - 1]
+            else:
+                print(f"Please enter a number between 1 and {len(games)}.")
+        except ValueError:
+            print("Invalid input. Please enter a number.")
+
+#function gets teams basketball refrence url based on entering city name
+def getTeamUrl(team):
+    #get mapped abbreviation
+    teamAbbr = TeamAbrMap[team]
+    #format the new url and return it
+    url = f"https://www.basketball-reference.com/teams/{teamAbbr}/2025.html"
+    return url
+
+#function to scrape data from table
+def scrapeTeamDetailPage(teamURL):
+    #check for valid url and html data
+    response = requests.get(teamURL)
+    if response.status_code != 200:
+        print("Can't reach team page")
+        exit()
+    
+    #Remove html comments
+    repsonse = re.sub(r'<!--|-->', '', response.text)
+
+    #get data of url and pass through beautiful soup
+    data = BeautifulSoup(repsonse, 'html.parser')
+
+    #returns the data on the page
+    return data
+
+#function returns df of team injuries
+def getInjuryTable(pageData):
+    #find table by id of injuries and check if valid
+    table = pageData.find("table", id="injuries")
+    if not table:
+        print("Couldn't find injury table")
+        exit()
+
+    #get the column headers and save in array
+    header = table.find("thead").find("tr")
+    columnNames= [th.get_text(strip=True) for th in header.find_all("th")]
+
+    rows = [] #array for row data
+
+    #iterate through table and scrape each row for data
+    for row in table.find("tbody").find_all("tr"):
+        cells = row.find_all(["th", "td"])
+        rowData = [cell.get_text(strip=True) for cell in cells]
+        rows.append(rowData)
+
+    #create data frame with columns and rows found
+    df = pd.DataFrame(rows, columns=columnNames)
+    return df
+
+#function returns df of the team stats per game
+def getTeamStats(pageData):
+    #find table by id of per_game_stats and check if valid
+    table = pageData.find("table", id="per_game_stats")
+    if not table:
+        print("Couldn't find stats table")
+        exit()
+    
+    #get column headers and save in array
+    header = table.find("thead").find("tr")
+    columnNames= [th.get_text(strip=True) for th in header.find_all("th")]
+    
+    rows = [] #array for row data
+
+    #iterate through table and scrape each row for data
+    for row in table.find("tbody").find_all("tr"):
+        cells = row.find_all(["th", "td"])
+        rowData = [cell.get_text(strip=True) for cell in cells]
+        rows.append(rowData)
+
+    #create data frame with columns and rows found
+    df = pd.DataFrame(rows, columns=columnNames)
+    df.drop(['Rk', 'Awards'], axis=1, inplace=True) #clean df a bit
+    return df
+
+selectedGame = userSelectGame(getGamesToday())
+x = getTeamUrl(selectedGame["awayTeam"])
+y = getTeamStats(scrapeTeamDetailPage(x))
+print(y)
+
     
         
