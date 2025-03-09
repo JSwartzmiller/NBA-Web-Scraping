@@ -103,21 +103,28 @@ def getGamesToday():
         print("Could not find the table container.")
         exit()
 
-    #within the huge table find todays table
     todaysGames = allGames.find("table", class_="Table")
-    if not todaysGames:
-        print("Could not locate todays games.")
-        exit()
 
-    #find the tbody that contains data within table
+    while todaysGames:
+        todayData = todaysGames.find("tbody")
+        if not todayData:
+            print("Error locating todays game data")
+            exit()
+
+        gameRows = todayData.find_all("tr", attrs={"data-idx": True})
+        #check if games have been played already
+        if gameRows and len(gameRows[0].find_all("td")) == 6:
+            break
+        else:
+            #games already been played and use next table to pull data
+            todaysGames = todaysGames.find_next("table", class_="Table")
+
+    #pull the data for the correct table of future games
     todayData = todaysGames.find("tbody")
-    if not todayData:
-        print("Error locating todays game data")
-        exit()
-
+    gameRows = todayData.find_all("tr", attrs={"data-idx": True})
+    
     games = [] #table to store game info
 
-    gameRows = todayData.find_all("tr", attrs={"data-idx": True})
     #iterate through each game and schedule data
     for game in gameRows:
         gameContent = game.find_all("td")
@@ -233,11 +240,24 @@ def getTeamStats(pageData):
     columnNames= [th.get_text(strip=True) for th in header.find_all("th")]
     
     rows = [] #array for row data
+    playerLinks = {} #dictionary to store indiv player links
 
     #iterate through table and scrape each row for data
     for row in table.find("tbody").find_all("tr"):
         cells = row.find_all(["th", "td"])
         rowData = [cell.get_text(strip=True) for cell in cells]
+        
+        #Find the player link in the row with 'name_display'
+        nameDisplayCell = [cell for cell in cells if cell.get('data-stat') == 'name_display']
+        if nameDisplayCell:
+            linkTag = nameDisplayCell[0].find("a")
+            if linkTag:
+                link = linkTag["href"]
+                link = "https://www.basketball-reference.com" + link
+                playerName = linkTag.get_text(strip=True)
+                playerLinks[playerName] = link
+                print(f"{playerName} | {link}")
+
         rows.append(rowData)
 
     #create data frame with columns and rows found
