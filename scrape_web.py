@@ -74,7 +74,6 @@ def getTeams():
     #return created dictionary
     return team_dictionary      
 
-
 #function that gets information about today's games
 def getGamesToday():
     #URL that holds todays NBA schedule
@@ -262,13 +261,16 @@ def getTeamStats(pageData):
 
     #create data frame with columns and rows found
     df = pd.DataFrame(rows, columns=columnNames)
-    df.drop(['Rk', 'Awards'], axis=1, inplace=True) #clean df a bit
-    return df
+    #clean df to remove double index and awards column
+    df.drop(['Rk', 'Awards'], axis=1, inplace=True) 
+
+    #return the data frame and dictionary with player links
+    return df, playerLinks
 
 selectedGame = userSelectGame(getGamesToday())
 x = getTeamUrl(selectedGame["awayTeam"])
-y = getTeamStats(scrapeTeamDetailPage(x))
-print(y)
+y, dict = getTeamStats(scrapeTeamDetailPage(x))
+
 
     
         
