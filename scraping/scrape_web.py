@@ -343,5 +343,3 @@ def main():
     print(randomStats)
 
 main()
-    
-        
