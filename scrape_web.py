@@ -304,9 +304,23 @@ def getPlayerGames(playerURL):
         print("Can't find player gamelog")
         exit()
 
-    
+    #get column headers and save in array
+    header = table.find("thead").find("tr")
+    columnNames= [th.get_text(strip=True) for th in header.find_all("th")]
 
+    rows = [] #array for row data
 
+    #iterate through table and scrape each row for data
+    for row in table.find("tbody").find_all("tr"):
+        cells = row.find_all(["th", "td"])
+        rowData = [cell.get_text(strip=True) for cell in cells]
+        rows.append(rowData)
+
+    #create data frame with columns and rows found
+    df = pd.DataFrame(rows, columns=columnNames)
+    #clean df to remove double index and awards column
+    df.drop(['Rk', 'G'], axis=1, inplace=True) 
+    return df
 
 
 selectedGame = userSelectGame(getGamesToday())
@@ -314,7 +328,7 @@ x = getTeamUrl(selectedGame["awayTeam"])
 
 getInjuryTable(scrapeTeamDetailPage(x))
 y, dict = getTeamStats(scrapeTeamDetailPage(x))
-getPlayerGames(dict[y["Player"][1]])
+print(getPlayerGames(dict[y["Player"][1]]))
 
 
     
