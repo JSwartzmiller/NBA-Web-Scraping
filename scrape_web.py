@@ -323,13 +323,25 @@ def getPlayerGames(playerURL):
     return df
 
 
-selectedGame = userSelectGame(getGamesToday())
-x = getTeamUrl(selectedGame["awayTeam"])
+def main():
+    #get user to pick a game
+    selectedGame = userSelectGame(getGamesToday())
+    teamUrl = getTeamUrl(selectedGame["awayTeam"]) #away team example
 
-getInjuryTable(scrapeTeamDetailPage(x))
-y, dict = getTeamStats(scrapeTeamDetailPage(x))
-print(getPlayerGames(dict[y["Player"][1]]))
+    teamDetailHtml = scrapeTeamDetailPage(teamUrl) #get team page data
 
+    #check for team injuries
+    teamInjuryTable = getInjuryTable(teamDetailHtml)
+    print(teamInjuryTable)
 
+    #Get df of Team Stats and dictionary for each player page {name: url}
+    teamStatsDf, playerDict = getTeamStats(teamDetailHtml)
+
+    #test get player stats
+    playerUrl = playerDict[teamStatsDf["Player"][1]]
+    randomStats = getPlayerGames(playerUrl)
+    print(randomStats)
+
+main()
     
         
