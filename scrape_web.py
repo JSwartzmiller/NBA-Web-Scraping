@@ -204,10 +204,18 @@ def scrapeTeamDetailPage(teamURL):
 
 #function returns df of team injuries
 def getInjuryTable(pageData):
+    #pageData = BeautifulSoup(pageData, "html5lib")
+
+    #Check if injury table dowsn't exist
+    noInjuryMessege = pageData.find("p", string="No current injuries to report.")
+    if noInjuryMessege:
+        print("No current injuries")
+        return None
+    
     #find table by id of injuries and check if valid
     table = pageData.find("table", id="injuries")
     if not table:
-        print("Couldn't find injury table")
+        print("Injury table not found")
         exit()
 
     #get the column headers and save in array
@@ -251,11 +259,19 @@ def getTeamStats(pageData):
         if nameDisplayCell:
             linkTag = nameDisplayCell[0].find("a")
             if linkTag:
+                #concat correct link together
                 link = linkTag["href"]
+                #chnage end of link with correct ending
+                if link.endswith(".html"):
+                    # Remove the last 5 characters (".html")
+                    link = link[:-5]
+                    # Append the game log path
+                    link += "/gamelog/2025/"
                 link = "https://www.basketball-reference.com" + link
+
+                #find playerName and add link to dictionary
                 playerName = linkTag.get_text(strip=True)
                 playerLinks[playerName] = link
-                print(f"{playerName} | {link}")
 
         rows.append(rowData)
 
@@ -267,9 +283,38 @@ def getTeamStats(pageData):
     #return the data frame and dictionary with player links
     return df, playerLinks
 
+
+#function to return df with player game logs
+def getPlayerGames(playerURL):
+    #check for valid url and html data
+    response = requests.get(playerURL)
+    if response.status_code != 200:
+        print("Can't reach team page")
+        exit()
+
+    #Remove html comments
+    repsonse = re.sub(r'<!--|-->', '', response.text)
+
+    #get data of url and pass through beautiful soup
+    data = BeautifulSoup(repsonse, 'html.parser')
+
+    #find table
+    table = data.find("table", id="pgl_basic")
+    if not table:
+        print("Can't find player gamelog")
+        exit()
+
+    
+
+
+
+
 selectedGame = userSelectGame(getGamesToday())
 x = getTeamUrl(selectedGame["awayTeam"])
+
+getInjuryTable(scrapeTeamDetailPage(x))
 y, dict = getTeamStats(scrapeTeamDetailPage(x))
+getPlayerGames(dict[y["Player"][1]])
 
 
     
