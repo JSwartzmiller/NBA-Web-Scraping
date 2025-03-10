@@ -332,7 +332,7 @@ def main():
 
     #check for team injuries
     teamInjuryTable = getInjuryTable(teamDetailHtml)
-    print(teamInjuryTable)
+    
 
     #Get df of Team Stats and dictionary for each player page {name: url}
     teamStatsDf, playerDict = getTeamStats(teamDetailHtml)
@@ -340,6 +340,3 @@ def main():
     #test get player stats
     playerUrl = playerDict[teamStatsDf["Player"][1]]
     randomStats = getPlayerGames(playerUrl)
-    print(randomStats)
-
-main()
